@@ -1,0 +1,68 @@
+{
+  "name": "piKioskoCliente",
+  "version": "1.0.0",
+  "description": "Reproductor de kiosco — sincroniza y reproduce videos desde un JSON remoto",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:win": "electron-builder --win --x64",
+    "build:linux": "electron-builder --linux --arm64",
+    "build:rpi": "electron-builder --linux --armv7l"
+  },
+  "build": {
+    "appId": "com.pikiosko.cliente",
+    "productName": "piKioskoCliente",
+    "copyright": "piKioskoCliente",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "piKioskoCliente.conf",
+        "to": "../piKioskoCliente.conf"
+      }
+    ],
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "installerIcon": "assets/icon.ico",
+      "shortcutName": "piKioskoCliente"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Video",
+      "icon": "assets/icon.png"
+    }
+  },
+  "keywords": [
+    "kiosk",
+    "video",
+    "player",
+    "raspberry-pi",
+    "pikiosko"
+  ],
+  "author": "piKioskoCliente",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}
