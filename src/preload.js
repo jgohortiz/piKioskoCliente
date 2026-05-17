@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('piKiosko', {
   onDownloadProgress: (cb) => ipcRenderer.on('download-progress', (_, d) => cb(d)),
   onVideoDeleted:     (cb) => ipcRenderer.on('video-deleted',     (_, f) => cb(f)),
   removeListeners:    (ch) => ipcRenderer.removeAllListeners(ch),
+  closeApp:           ()              => ipcRenderer.invoke('close-app'),
+  writeLog:           (level, msg)   => ipcRenderer.invoke('write-log', level, msg),
+  getLogPath:         ()              => ipcRenderer.invoke('get-log-path'),
 });

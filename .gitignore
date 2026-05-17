@@ -2,3 +2,8 @@ node_modules/
 dist/
 *.tmp
 .DS_Store
+
+# Videos de prueba (no incluir en el repositorio)
+test-videos/*.mp4
+test-videos/*.avi
+test-videos/*.mkv
