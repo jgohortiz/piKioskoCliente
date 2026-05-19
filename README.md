@@ -1,6 +1,7 @@
 # piKioskoCliente
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-C51A4A.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-C51A4A.svg)](LICENSE)  
+[![GitHub](https://img.shields.io/badge/GitHub-jgohortiz%2FpiKioskoCliente-C51A4A.svg)](https://github.com/jgohortiz/piKioskoCliente)
 
 **piKioskoCliente** es una aplicación de kiosco digital que reproduce videos de forma continua y desatendida en pantalla completa. Está construida sobre [Electron](https://www.electronjs.org/), lo que le permite ejecutarse de forma nativa en Windows y en Raspberry Pi OS de 64 bits sin modificar el código fuente.
 
@@ -105,14 +106,16 @@ Si el usuario incluye por error query params en `API_BASE_URL`, se eliminan ante
 | `BACKGROUND_COLOR` | Color de fondo (CSS)                                     | `#000000`, `rgb(20,20,30)`                        |
 | `BACKGROUND_IMAGE` | Imagen de fondo (ruta local o URL remota)                | `/home/pi/fondo.jpg`                             |
 
-### Dónde busca el archivo
+### Donde busca el archivo
 
 `config.js` busca `piKioskoCliente.conf` en este orden:
 
-1. Directorio del ejecutable empaquetado (junto al `.exe` o al `AppImage`)
-2. Directorio de trabajo actual (útil con `npm start` en desarrollo)
-3. Un nivel por encima de `resources/` (electron-builder)
-4. Raíz del paquete Electron
+1. **Junto al ejecutable real en disco**
+   - Windows: directorio donde esta el `.exe`
+   - Linux AppImage: directorio donde esta el `.AppImage` (usando `$APPIMAGE`, no la ruta dentro del squashfs montado en `/tmp`)
+2. **Directorio de trabajo actual** — cubre el desarrollo con `npm start`
+
+Las rutas dentro del paquete Electron o del AppImage no se usan porque el sistema de archivos interno es de solo lectura.
 
 ---
 
@@ -341,7 +344,7 @@ Instala desde el panel de extensiones (`Ctrl + Shift + X`):
 
 ```powershell
 cd C:\Proyectos
-git clone https://github.com/tu-usuario/piKioskoCliente.git
+git clone https://github.com/jgohortiz/piKioskoCliente.git
 cd piKioskoCliente
 code .
 ```
@@ -377,6 +380,8 @@ npm run build:win
 
 Tras instalar, coloca `piKioskoCliente.conf` en el mismo directorio que el ejecutable y configura `API_BASE_URL`, `SCREEN_ID` y `TOKEN`.
 
+> **Nota:** La compilacion para Raspberry Pi (`build:linux`) no puede ejecutarse desde Windows. Debe realizarse directamente en la Raspberry Pi. Ver la seccion **Compilar - Raspberry Pi OS 64-bit**.
+
 ---
 
 ## Compilar
@@ -398,26 +403,42 @@ El instalador NSIS permite elegir el directorio de instalación y crea acceso di
 
 ### Raspberry Pi OS 64-bit — AppImage
 
-**Compilar en la Raspberry Pi (recomendado):**
+El AppImage para Raspberry Pi **debe compilarse directamente en la Raspberry Pi**. No es posible generarlo desde Windows porque `electron-builder` requiere la herramienta `mksquashfs`, que solo existe en Linux y no está disponible en entornos Windows.
+
+Pasos para compilar en la Raspberry Pi:
 
 ```bash
-# Instalar Node.js 20 si la versión de apt es inferior a 18
+# 1. Instalar Node.js 20 si la version de apt es anterior a la 18
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
+# Verificar version (debe ser >= 18)
+node --version
+
+# 2. Clonar o copiar el repositorio en la Pi
+#    Si usas git:
+git clone https://github.com/jgohortiz/piKioskoCliente.git
 cd piKioskoCliente
+
+#    Si copias los archivos manualmente (por USB o SCP desde Windows):
+#    scp -r ./piKioskoCliente pi@192.168.1.X:/home/pi/
+
+# 3. Instalar dependencias
 npm install
+
+# 4. Compilar
 npm run build:linux
+# → dist/piKioskoCliente-1.0.0-arm64.AppImage
+
+# 5. Dar permisos de ejecucion
 chmod +x dist/piKioskoCliente-*.AppImage
+
+# 6. Copiar el AppImage y el .conf a la ubicacion definitiva
+cp dist/piKioskoCliente-*.AppImage ~/
+cp piKioskoCliente.conf ~/
 ```
 
-**Cross-compile desde Windows:**
-
-```bash
-npm run build:rpi
-# Copiar el .AppImage a la Pi por SCP
-scp dist/piKioskoCliente-*.AppImage pi@192.168.1.X:/home/pi/
-```
+> **Nota:** `npm run build:linux` genera un AppImage para ARM64 (64 bits), compatible con Raspberry Pi OS de 64 bits en Raspberry Pi 3, 4 y 5.
 
 ---
 
@@ -426,12 +447,14 @@ scp dist/piKioskoCliente-*.AppImage pi@192.168.1.X:/home/pi/
 ```
 /home/pi/
 ├── piKioskoCliente-1.0.0-arm64.AppImage
-└── piKioskoCliente.conf
+└── piKioskoCliente.conf    <- debe estar en el MISMO directorio que el .AppImage
 ```
 
 ```bash
 ./piKioskoCliente-1.0.0-arm64.AppImage --no-sandbox
 ```
+
+El archivo `.conf` debe estar junto al `.AppImage` en el disco. No debe colocarse dentro del directorio montado en `/tmp` ni dentro del AppImage, ya que ese sistema de archivos es de solo lectura.
 
 Si hay problemas gráficos:
 

@@ -137,7 +137,7 @@
     /* ── BADGE OFFLINE ──────────────────────────────────────────── */
     #offline-badge {
       position: fixed;
-      top: 16px; right: 16px;
+      top: 16px; right: 100px;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -499,6 +499,20 @@
     .tab-pane.active { display: block; }
 
 
+    /* ── BARRA SUPERIOR: botones siempre visibles ────────────────── */
+    /* Visible incluso sobre el splash de carga (z-index > 100)      */
+    #top-bar {
+      position: fixed;
+      top: 0; right: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 12px;
+      z-index: 500;
+      pointer-events: all;
+    }
+
+
 </style>
 </head>
 <body>
@@ -508,6 +522,12 @@
 
   <!-- Badge de estado de red -->
   <div id="offline-badge"><span class="offline-dot"></span>Offline</div>
+
+  <!-- Botones de cierre y ajustes: siempre visibles, sobre el splash -->
+  <div id="top-bar">
+    <button id="settings-btn" class="bar-btn" title="Ajustes" onclick="openSettings()">&#9881;</button>
+    <button id="close-app-btn" class="bar-btn" title="Cerrar aplicacion" onclick="confirmClose()">&#10005;</button>
+  </div>
 
   <!-- Reproductor -->
   <div id="video-container">
@@ -523,11 +543,7 @@
       <div id="video-counter">0 / 0</div>
     </div>
 
-    <!-- Esquina inferior derecha: botón cerrar + ajustes -->
-    <div style="display:flex;gap:8px;pointer-events:all;">
-      <button id="close-app-btn" class="bar-btn" title="Cerrar aplicación" onclick="confirmClose()">✕</button>
-      <button id="settings-btn" class="bar-btn" title="Ajustes" onclick="openSettings()">⚙</button>
-    </div>
+    <!-- Botones movidos a la barra superior -->
 
   </div>
 
@@ -650,6 +666,14 @@
               <div style="font-size:11px;color:var(--muted);">Linea fina en el borde inferior de la pantalla.</div>
             </div>
           </label>
+        </div>
+
+        <div class="mb-3" style="margin-top:16px;">
+          <label class="form-label" for="f-startup-delay">Espera al iniciar (segundos)</label>
+          <input id="f-startup-delay" class="form-control" type="number"
+                 min="0" max="120" step="1" placeholder="5"
+                 style="width:120px;" />
+          <span class="form-text">Tiempo de espera antes de la primera sincronizacion. Permite que el dispositivo se conecte a la red.</span>
         </div>
       </div>
 
@@ -1065,6 +1089,10 @@
     if ($showDesc)     $showDesc.checked     = cfg.showDescription !== false;
     if ($showProgress) $showProgress.checked = cfg.showProgress !== false;
 
+    // Startup delay
+    const $startupDelay = document.getElementById('f-startup-delay');
+    if ($startupDelay) $startupDelay.value = (typeof cfg.startupDelay === 'number') ? cfg.startupDelay : 5;
+
     // Apariencia
     $fColor.value = cfg.backgroundColor || '#000000';
     $fImage.value = cfg.rawBackgroundImage || '';
@@ -1134,6 +1162,7 @@
       showName:        document.getElementById('f-show-name')?.checked     !== false,
       showDescription: document.getElementById('f-show-desc')?.checked     !== false,
       showProgress:    document.getElementById('f-show-progress')?.checked  !== false,
+      startupDelay:    Math.max(0, parseInt(document.getElementById('f-startup-delay')?.value || '5', 10) || 0),
       backgroundColor: $fColor.value.trim() || '#000000',
       backgroundImage: $fImage.value.trim(),
     };
@@ -1211,10 +1240,35 @@
   });
 
   // ── ARRANQUE ───────────────────────────────────────────────────────
+  // Al arrancar se espera STARTUP_DELAY segundos antes de intentar la primera
+  // sincronizacion, dando tiempo al dispositivo de conectarse a la red.
+  // Durante la espera se muestra una cuenta regresiva en la pantalla de carga.
   window.addEventListener('DOMContentLoaded', async () => {
     const cfg = await window.piKiosko.getConfig();
     applyConfig(cfg);
-    setTimeout(() => startSync(), 400);
+
+    const delay = (typeof cfg.startupDelay === 'number') ? cfg.startupDelay : 5;
+
+    if (delay <= 0) {
+      // Sin espera configurada: iniciar sincronizacion de inmediato
+      setStatus('<span class="dots">Conectando</span>');
+      setTimeout(() => startSync(), 200);
+      return;
+    }
+
+    // Cuenta regresiva visible en el splash
+    let remaining = delay;
+    function tick() {
+      setStatus('Iniciando en ' + remaining + ' segundo' + (remaining !== 1 ? 's' : '') + '...');
+      if (remaining <= 0) {
+        setStatus('<span class="dots">Conectando</span>');
+        startSync();
+        return;
+      }
+      remaining--;
+      setTimeout(tick, 1000);
+    }
+    tick();
   });
   </script>
 </body>

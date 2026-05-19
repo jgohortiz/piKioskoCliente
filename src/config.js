@@ -36,6 +36,11 @@
  *
  *   SHOW_PROGRESS    Muestra la barra de progreso en el borde inferior
  *                    de la pantalla durante la reproduccion. true | false
+ *
+ *   STARTUP_DELAY    Segundos de espera al arrancar antes de intentar la
+ *                    primera sincronizacion. Permite que el dispositivo se
+ *                    conecte a la red antes de consultar el servidor.
+ *                    Valor minimo: 0. Valor por defecto: 5.
  */
 
 const fs   = require('fs');
@@ -54,26 +59,45 @@ const DEFAULTS = {
   SHOW_NAME:        'true',   // 'true' | 'false'
   SHOW_DESCRIPTION: 'true',   // 'true' | 'false'
   SHOW_PROGRESS:    'true',   // 'true' | 'false'
+  STARTUP_DELAY:    '5',      // segundos de espera antes de la primera sync
 };
 
+// ── DETECTAR DIRECTORIO ESCRIBIBLE DEL EJECUTABLE ─────────────────────────────
+// Cuando la aplicacion corre como AppImage en Linux, process.execPath apunta
+// al binario dentro del sistema de archivos squashfs montado en /tmp, que es
+// de solo lectura. En ese caso se usa process.env.APPIMAGE, que contiene la
+// ruta real del archivo .AppImage en el disco del usuario (escribible).
+//
+// Prioridad:
+//   1. process.env.APPIMAGE -> ruta real del .AppImage en disco (Linux AppImage)
+//   2. process.execPath      -> ruta del .exe o binario (Windows / desarrollo)
+function getExecutableDir() {
+  if (process.env.APPIMAGE) {
+    // Linux AppImage: APPIMAGE contiene la ruta real del archivo en disco,
+    // no la ruta dentro del squashfs montado en /tmp.
+    return path.dirname(process.env.APPIMAGE);
+  }
+  return path.dirname(process.execPath);
+}
+
 // ── LOCALIZAR EL ARCHIVO .conf ─────────────────────────────────────────────────
-// Se busca en cuatro ubicaciones en orden de prioridad. La primera que exista
-// es la que se usa. La ruta resuelta se cachea para no repetir la búsqueda.
+// Se busca en dos ubicaciones en orden de prioridad.
+// Las rutas dentro del paquete Electron o del AppImage NO se incluyen porque
+// son de solo lectura y no permiten escritura.
 let _confPath = null;
 
 function getConfPath() {
   if (_confPath) return _confPath;
 
-  const filename   = 'piKioskoCliente.conf';
+  const filename = 'piKioskoCliente.conf';
   const candidates = [
-    // 1. Junto al ejecutable empaquetado (.exe en Windows, AppImage en Linux)
-    path.join(path.dirname(process.execPath), filename),
-    // 2. Directorio de trabajo actual (útil con "npm start" en desarrollo)
+    // 1. Directorio real del ejecutable en disco.
+    //    Junto al .exe en Windows o junto al .AppImage en Linux.
+    //    Es la ubicacion esperada en produccion.
+    path.join(getExecutableDir(), filename),
+    // 2. Directorio de trabajo actual.
+    //    Cubre el caso de desarrollo con "npm start" desde la raiz del proyecto.
     path.join(process.cwd(), filename),
-    // 3. Un nivel por encima de resources/ (estructura de electron-builder)
-    path.join(app.getAppPath(), '..', filename),
-    // 4. Raíz del paquete Electron (fallback final)
-    path.join(app.getAppPath(), filename),
   ];
 
   for (const c of candidates) {
@@ -84,9 +108,10 @@ function getConfPath() {
     }
   }
 
-  // Si no se encuentra, se usará el candidato de desarrollo para escritura
-  _confPath = candidates[1];
-  console.warn(`[CONFIG] Archivo no encontrado. Se creará en: ${_confPath}`);
+  // No encontrado: usar el primer candidato (junto al ejecutable) como destino
+  // de escritura cuando el usuario guarde la configuracion por primera vez.
+  _confPath = candidates[0];
+  console.warn(`[CONFIG] Archivo no encontrado. Se creara en: ${_confPath}`);
   return _confPath;
 }
 
@@ -174,6 +199,7 @@ function loadConfig() {
     showName:        (parsed.SHOW_NAME        || DEFAULTS.SHOW_NAME)        !== 'false',
     showDescription: (parsed.SHOW_DESCRIPTION || DEFAULTS.SHOW_DESCRIPTION) !== 'false',
     showProgress:    (parsed.SHOW_PROGRESS    || DEFAULTS.SHOW_PROGRESS)    !== 'false',
+    startupDelay:    Math.max(0, parseInt(parsed.STARTUP_DELAY || DEFAULTS.STARTUP_DELAY, 10) || 0),
     _confPath:       confPath,
   };
 
@@ -191,6 +217,7 @@ function loadConfig() {
     showName:        conf.showName,
     showDescription: conf.showDescription,
     showProgress:    conf.showProgress,
+    startupDelay:    conf.startupDelay,
   });
 
   return conf;
@@ -245,6 +272,10 @@ function saveConfig(newValues) {
     '# Muestra la barra de progreso en el borde inferior de la pantalla.',
     '# Valores permitidos: true | false',
     `SHOW_PROGRESS = ${String(newValues.showProgress !== false && newValues.showProgress !== 'false')}`,
+    '',
+    '# Segundos de espera al arrancar antes de intentar la primera sincronizacion.',
+    '# Permite que el dispositivo se conecte a la red. Minimo: 0. Por defecto: 5.',
+    `STARTUP_DELAY = ${Math.max(0, parseInt(newValues.startupDelay, 10) || 0)}`,
     '',
   ];
 

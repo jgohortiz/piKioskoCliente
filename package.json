@@ -1,14 +1,13 @@
 {
   "name": "piKioskoCliente",
   "version": "1.0.0",
-  "description": "Reproductor de kiosco — sincroniza y reproduce videos desde un JSON remoto",
+  "description": "Reproductor de kiosco \u2014 sincroniza y reproduce videos desde un JSON remoto",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
     "build:win": "electron-builder --win --x64",
-    "build:linux": "electron-builder --linux --arm64",
-    "build:rpi": "electron-builder --linux --armv7l"
+    "build:linux": "electron-builder --linux --arm64"
   },
   "build": {
     "appId": "com.pikiosko.cliente",

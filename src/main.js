@@ -357,6 +357,7 @@ ipcMain.handle('get-config', () => ({
   showName:           CONFIG.showName,
   showDescription:    CONFIG.showDescription,
   showProgress:       CONFIG.showProgress,
+  startupDelay:       CONFIG.startupDelay,
   videosDir:          VIDEOS_DIR,
   confPath:           CONFIG._confPath,
 }));
@@ -401,10 +402,11 @@ app.whenReady().then(() => {
   writeLog('INFO', 'Node.js: ' + process.version);
   writeLog('INFO', 'Modo: ' + (isDev ? 'desarrollo' : 'kiosco'));
   writeLog('INFO', 'Config: ' + JSON.stringify({
-    base:   CONFIG.apiBaseUrl,
-    screen: CONFIG.screenId,
-    type:   CONFIG.mediaType,
-    bg:     CONFIG.backgroundColor,
+    base:         CONFIG.apiBaseUrl,
+    screen:       CONFIG.screenId,
+    type:         CONFIG.mediaType,
+    bg:           CONFIG.backgroundColor,
+    startupDelay: CONFIG.startupDelay,
   }));
 
   // Registrar protocolo file:// para que el renderer pueda cargar videos e
