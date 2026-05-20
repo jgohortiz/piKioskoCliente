@@ -252,8 +252,37 @@ systemctl status zabbix-agent
 ```
 
 ---
+## 7. Configuración de la pantalla
 
-## 7. Modo de Solo Lectura de la Tarjeta SD
+Edite la configuración del escritorio.
+```bash
+nano /home/pi/.config/pcmanfm/default/desktop-items-HDMI-A-1.conf
+```
+
+Defina los parámetros de la siguiente forma para quitar iconos, fondo y establecer colores.
+```
+[*]
+desktop_bg=#000000
+desktop_shadow=#000000
+desktop_fg=#E8E8E8
+desktop_font=Nunito Sans Light 12
+wallpaper=
+wallpaper_mode=color
+show_home=0
+show_trash=0
+show_mounts=0
+folder=/home/pi/Desktop
+```
+
+Para actualizar ejecute las siguientes instrucciones.
+```bash
+pcmanfm --reconfigure
+pcmanfm --desktop-off
+```
+
+---
+
+## 8. Modo de Solo Lectura de la Tarjeta SD
 
 En equipos que operan de forma continua y sin supervisión constante, las escrituras frecuentes sobre la tarjeta SD pueden reducir su vida útil y, en caso de un corte de energía repentino, provocar corrupción del sistema de archivos. El sistema de archivos superpuesto (Overlay File System) de Raspberry Pi OS soluciona este problema redirigiendo todas las escrituras a la memoria RAM, dejando la tarjeta SD en modo de solo lectura.
 
@@ -264,6 +293,14 @@ Si lo desea, antes de activar el modo de solo lectura puede limpiar el historial
 ```bash
 history -c && history -w
 ```
+
+Antes de "congelar la SD" borre los videos que se hayan descargado, para tal fin detenga la aplicación y elimine los videos:
+
+```bash
+kill $(pgrep -f "piKioskoCliente")
+rm /home/pi/.config/piKioskoCliente/videos/*.mp4
+```
+
 
 A continuación, abra la utilidad de configuración:
 
