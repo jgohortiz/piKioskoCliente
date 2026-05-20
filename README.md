@@ -430,28 +430,31 @@ El instalador NSIS permite elegir el directorio de instalacion y crea acceso dir
 El AppImage **debe compilarse directamente en la Raspberry Pi**. No es posible generarlo desde Windows porque `electron-builder` requiere la herramienta `mksquashfs`, que solo existe en Linux.
 
 ```bash
-# 1. Instalar Node.js 20 si la version de apt es anterior a la 18
+# 1. Instalar Git
+sudo apt-get install git -y
+
+# 2. Instalar Node.js 20 si la version de apt es anterior a la 18
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Verificar version (debe ser >= 18)
 node --version
 
-# 2. Clonar el repositorio en la Pi
+# 3. Clonar el repositorio en la Pi
 git clone https://github.com/jgohortiz/piKioskoCliente.git
 cd piKioskoCliente
 
 # O copiar los archivos desde Windows por SCP:
 #   scp -r ./piKioskoCliente pi@192.168.1.X:/home/pi/
 
-# 3. Instalar dependencias
+# 4. Instalar dependencias
 npm install
 
-# 4. Compilar
+# 5. Compilar
 npm run build:linux
 # → dist/piKioskoCliente-1.0.0-arm64.AppImage
 
-# 5. Dar permisos de ejecucion y copiar a la ubicacion definitiva
+# 6. Dar permisos de ejecucion y copiar a la ubicacion definitiva
 chmod +x dist/piKioskoCliente-*.AppImage
 cp dist/piKioskoCliente-*.AppImage ~/
 cp piKioskoCliente.conf ~/
